@@ -61,8 +61,8 @@ def get_train_val_dataloaders(
         training_dataset = Subset(full_training_dset, train_idx)
         validation_dataset = Subset(full_validation_dset, validate_idx)
     else:
-        training_dataset = get_training_dataset(training_data, img_size, class_to_idx, is_marco_data=True)
-        validation_dataset = get_validation_dataset(validation_data, img_size, class_to_idx, is_marco_data=True)
+        training_dataset = get_training_dataset(training_data, img_size, class_to_idx)
+        validation_dataset = get_validation_dataset(validation_data, img_size, class_to_idx)
 
     if imbalanced:  # Oversample under-represented classes
         if validation_data is None:

@@ -11,7 +11,7 @@ from classifier.model.operations.classifier_trainer import ImageClassifierTraine
 from utilities.base_data_utils import (
     get_classifier_settings,
     get_standard_training_data,
-    get_marco_data,
+    get_pre_split_data,
 )
 
 
@@ -25,7 +25,7 @@ from utilities.base_data_utils import (
 @click.option(
     "--prepend_dir",
     default=None,
-    help="Preprend this directory if paths in CSV are relative rather than absolute.",
+    help="Prepend this directory if paths in CSV are relative rather than absolute.",
 )
 @click.option(
     "--finetune",
@@ -39,9 +39,9 @@ from utilities.base_data_utils import (
     help="Use this option to upsample under-represented classes in imbalanced data.",
 )
 @click.option(
-    "--marco_valid_data",
+    "--valid_data",
     default=None,
-    help="Path to MARCO validation dataset CSV (if training on MARCO data).",
+    help="Path to validation dataset CSV (if data has been split before training).",
 )
 @click.option(
     "--fix_seed",
@@ -59,7 +59,7 @@ from utilities.base_data_utils import (
     "--distributed",
     is_flag=True,
     default=False,
-    help="Use this option to perform trainng distibuted across multiple GPUs.",
+    help="Use this option to perform training distributed across multiple GPUs.",
 )
 @click.option(
     "--use_accuracy",
@@ -74,7 +74,7 @@ def train_classifier(
     prepend_dir,
     finetune,
     imbalanced,
-    marco_valid_data,
+    valid_data,
     fix_seed,
     reload_optimizer,
     distributed,
@@ -91,13 +91,14 @@ def train_classifier(
     )
     settings = get_classifier_settings(settings_file)
     # Standard (non-MARCO training)
-    if marco_valid_data is None:
+    if valid_data is None:
         training_data = get_standard_training_data(csv_filepath, prepend_dir)
         validation_data = None
     else:
-        training_data, validation_data = get_marco_data(
+        training_data, validation_data = get_pre_split_data(
             csv_filepath,
-            marco_valid_data,
+            valid_data,
+            prepend_dir
         )
     # Create Trainer
     trainer = ImageClassifierTrainer(

@@ -9,7 +9,8 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import torch
-import torchmetrics
+from torchmetrics.classification import MulticlassAccuracy
+import utilities.base_data_utils as utils
 from collections import OrderedDict
 import utilities.config as cfg
 from classifier.data.dataloaders import get_train_val_dataloaders
@@ -17,6 +18,7 @@ from classifier.model.model import create_model_on_device
 from utilities.early_stopping import EarlyStopping
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+
 
 class ImageClassifierTrainer:
     """Class that provides methods to train a deep learning image
@@ -31,7 +33,7 @@ class ImageClassifierTrainer:
         imbalanced: bool = False,
         fix_seed: bool = False,
         marco_validation_data: Union[pd.DataFrame, None] = None,
-        distributed: bool = False
+        distributed: bool = False,
     ):
         """Inits ImageClassifierTrainer.
         Args:
@@ -47,7 +49,11 @@ class ImageClassifierTrainer:
         self.distributed = distributed
         self.class_names = settings.class_names
         self.training_loader, self.validation_loader = get_train_val_dataloaders(
-            training_data, settings, imbalanced=imbalanced, fix_seed=fix_seed, validation_data=marco_validation_data
+            training_data,
+            settings,
+            imbalanced=imbalanced,
+            fix_seed=fix_seed,
+            validation_data=marco_validation_data,
         )
         # Params for learning rate finder
         self.starting_lr = float(settings.starting_lr)
@@ -56,14 +62,20 @@ class ImageClassifierTrainer:
         self.lr_find_epochs = settings.lr_find_epochs
         self.lr_reduce_factor = settings.lr_reduce_factor
         # Params for model training
-        self.model_device_num = int(settings.cuda_device)
+        device_type = utils.get_available_device_type()
+        if device_type == "cuda":
+            self.model_device = f"cuda:{int(settings.cuda_device)}"
+        else:
+            self.model_device = device_type
         self.patience = settings.patience
         self.loss_criterion = torch.nn.CrossEntropyLoss()
         self.num_classes = len(settings.class_names)
-        self.per_class_accuracy = torchmetrics.Accuracy(
+        self.per_class_accuracy = MulticlassAccuracy(
             num_classes=self.num_classes, average=None
-        ).to(self.model_device_num)
-        self.accuracy = torchmetrics.Accuracy().to(self.model_device_num)
+        ).to(self.model_device)
+        self.accuracy = MulticlassAccuracy(num_classes=self.num_classes).to(
+            self.model_device
+        )
         if finetune_path is None:
             self.model_struc_dict = self._get_model_struc_dict(settings)
         else:
@@ -111,13 +123,16 @@ class ImageClassifierTrainer:
             model_dict=self.model_struc_dict,
             best_score=best_score,
             use_accuracy=use_accuracy,
-            distributed=self.distributed
+            distributed=self.distributed,
         )
 
     def _create_model_and_optimiser(self, learning_rate, frozen=True, pretrained=True):
-        logging.info(f"Setting up the model on device {self.model_device_num}.")
+        logging.info(f"Setting up the model on device {self.model_device}.")
         self.model = create_model_on_device(
-            self.model_device_num, self.model_struc_dict, pretrained=pretrained, distributed=self.distributed
+            self.model_device,
+            self.model_struc_dict,
+            pretrained=pretrained,
+            distributed=self.distributed,
         )
         if frozen:
             self._freeze_model()
@@ -136,11 +151,7 @@ class ImageClassifierTrainer:
 
     def _load_in_weights(self, output_path, optimizer=False, gpu=True):
         # load the last checkpoint with the best model
-        if gpu:
-            map_location = f"cuda:{self.model_device_num}"
-        else:
-            map_location = "cpu"
-        model_dict = torch.load(output_path, map_location=map_location)
+        model_dict = torch.load(output_path, map_location=self.model_device)
         logging.info("Loading model weights.")
         state_dict = model_dict["model_state_dict"]
         if self.distributed:
@@ -252,8 +263,8 @@ class ImageClassifierTrainer:
                     desc="Validation batch",
                     bar_format=cfg.TQDM_BAR_FORMAT,
                 ):
-                    inputs, targets = batch[0].to(self.model_device_num), batch[1].to(
-                        self.model_device_num
+                    inputs, targets = batch[0].to(self.model_device), batch[1].to(
+                        self.model_device
                     )
                     output = self.model(inputs)  # Forward pass
                     # calculate the loss
@@ -309,9 +320,7 @@ class ImageClassifierTrainer:
 
     def _train_one_batch(self, lr_scheduler, batch):
         inputs, targets = batch
-        inputs, targets = inputs.to(self.model_device_num), targets.to(
-            self.model_device_num
-        )
+        inputs, targets = inputs.to(self.model_device), targets.to(self.model_device)
         self.optimizer.zero_grad()
         output = self.model(inputs)  # Forward pass
         loss = self.loss_criterion(output, targets)
@@ -364,7 +373,7 @@ class ImageClassifierTrainer:
     def _find_lr_from_graph(
         lr_find_loss: torch.Tensor, lr_find_lr: torch.Tensor
     ) -> float:
-        """Calculates learning rate corresponsing to minimum gradient in graph
+        """Calculates learning rate corresponding to minimum gradient in graph
         of loss vs learning rate.
         Args:
             lr_find_loss (torch.Tensor): Loss values accumulated during training
@@ -376,14 +385,12 @@ class ImageClassifierTrainer:
         default_min_lr = cfg.DEFAULT_MIN_LR  # Add as default value to fix bug
         # Get loss values and their corresponding gradients, and get lr values
         for i in range(0, len(lr_find_loss)):
-            if lr_find_loss[i].is_cuda:
-                lr_find_loss[i] = lr_find_loss[i].cpu()
-            lr_find_loss[i] = lr_find_loss[i].detach().numpy()
+            lr_find_loss[i] = lr_find_loss[i].cpu().detach().numpy()
         losses = np.array(lr_find_loss)
         # Smooth the losses
         kernel_size = 10
         kernel = np.ones(kernel_size) / kernel_size
-        losses_convolved = np.convolve(losses, kernel, mode='same')
+        losses_convolved = np.convolve(losses, kernel, mode="same")
         try:
             gradients = np.gradient(losses_convolved)
             min_gradient = gradients.min()

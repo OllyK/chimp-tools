@@ -77,10 +77,22 @@ def get_classifier_settings(settings_file):
     settings = get_settings_data(settings_path)
     return settings
 
-def get_marco_data(csv_filepath, marco_valid_filepath):
+def get_pre_split_data(csv_filepath, validation_filepath, prepend_dir):
     csv_filepath = check_csv_filepath(csv_filepath)
     training_data = pd.read_csv(csv_filepath)
-    validation_data = pd.read_csv(marco_valid_filepath)
+    validation_data = pd.read_csv(validation_filepath)
+    if prepend_dir:
+        prepend_dir = Path(prepend_dir).resolve()
+        if prepend_dir.exists():
+            training_data.iloc[:, 0] = training_data.iloc[:, 0].apply(
+                lambda x: prepend_dir / x
+            )
+            validation_data.iloc[:, 0] = validation_data.iloc[:, 0].apply(
+                lambda x: prepend_dir / x
+            )
+        else:
+            logging.error(f"Prepend directory: {prepend_dir} does not exist!")
+            sys.exit(1)
     return training_data, validation_data
 
 def get_detector_train_settings(settings_file):

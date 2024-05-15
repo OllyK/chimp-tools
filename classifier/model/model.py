@@ -6,7 +6,7 @@ import torch.nn as nn
 
 
 def create_model_on_device(
-    device: Union[int, str], model_struc_dict: dict, pretrained=True, distributed=False,
+    device: str, model_struc_dict: dict, pretrained=True, distributed=False,
 ) -> torch.nn.Module:
     model_type = model_struc_dict["type"]
     num_classes = model_struc_dict["num_classes"]
@@ -41,12 +41,9 @@ def create_model_on_device(
             nn.Linear(in_features=512, out_features=num_classes, bias=True),
         )
     logging.info(f"Sending the {model_type} model to device {device}")
-    if device == "cpu":
-        device_str = device
-    else:
-        device_str = "cuda:" + str(device)
-    dev_count = torch.cuda.device_count()
-    if distributed and dev_count > 1:
-        logging.info(f"Distributing training across {dev_count} GPUs.")
-        model = nn.DataParallel(model)
-    return model.to(torch.device(device_str))
+    if "cuda" in device:
+        dev_count = torch.cuda.device_count()
+        if distributed and dev_count > 1:
+            logging.info(f"Distributing training across {dev_count} GPUs.")
+            model = nn.DataParallel(model)
+    return model.to(device)
