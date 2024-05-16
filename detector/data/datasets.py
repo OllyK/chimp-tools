@@ -1,3 +1,4 @@
+import logging
 import os
 
 import cv2
@@ -6,14 +7,15 @@ import torch
 
 
 class ZooniverseXtalDropDataset(torch.utils.data.Dataset):
-    def __init__(self, root, transforms=None):
+    def __init__(self, root, labels, transforms=None):
         self.root = root
         self.transforms = transforms
         # load all image files, sorting them to
         # ensure that they are aligned
         self.imgs = list(sorted(os.listdir(os.path.join(root, "images"))))
         self.masks = list(sorted(os.listdir(os.path.join(root, "masks"))))
-        self.class_key = {"drop": 1, "crystal": 2}
+        self.class_key = {v: k + 1 for k, v in enumerate(labels)}
+        logging.info(f"Class key: {self.class_key}")
         
     def __getitem__(self, idx):
         empty_flag= False

@@ -16,10 +16,11 @@ def get_train_val_dataloaders(
 ):
     training_set_prop = settings.training_set_proportion
     batch_size = utils.get_batch_size(settings)
+    labels = settings.class_names
     # use our dataset and defined transformations
-    full_training_dset = ZooniverseXtalDropDataset(data_dir, get_transform(train=True))
+    full_training_dset = ZooniverseXtalDropDataset(data_dir, labels, get_transform(train=True))
     full_validation_dset = ZooniverseXtalDropDataset(
-        data_dir, get_transform(train=False)
+        data_dir, labels, get_transform(train=False)
     )
     # split the dataset in train and test set
     dset_length = len(full_training_dset)

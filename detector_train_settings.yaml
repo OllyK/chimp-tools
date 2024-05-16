@@ -1,7 +1,6 @@
 # Settings for model training
 model_output_fn: CHiMP_Mask_R_CNN_XChem # Suffix for the saved model filename
-# list of classes, 
-class_names: ["background", "drop", "crystals"] # should correspond to those in training data CSV
+class_names: ["drop", "crystal"] # List of classes to train on
 image_size: 512 # size of images used for training (must be multiple of 32)
 training_set_proportion: 0.8 # Proportion of images to use the training, rest are used for validation
 cuda_device: 1 # The graphics card to use (between 0 and 3 for a machine with 4 GPUs)
@@ -10,5 +9,5 @@ num_epochs: 10 # Number of training epochs
 evaluate_freq: 5 # Run a CocoTools evaluation every x epochs (slow)
 patience: 8 # Number of epochs to wait before early stopping if validation loss does not improve
 pct_lr_inc: 0.3 # the percentage of overall iterations where the LR is increasing
-starting_lr: 2e-4 # The starting learning rate
+starting_lr: 2e-5 # The starting learning rate
 random_seed: 2147483647 # seed to use if `fix_seed` flag is used to fix train/valid split

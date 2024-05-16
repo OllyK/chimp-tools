@@ -41,7 +41,7 @@ class MaskRCNNTrainer:
         self.finetune_path = finetune_path
         self.fix_seed = fix_seed
         self.class_names = settings.class_names
-        self.num_classes = len(self.class_names)
+        self.num_classes = len(self.class_names) + 1  # +1 for background
         self.training_loader, self.validation_loader = get_train_val_dataloaders(
             data_dir, settings, fix_seed=fix_seed
         )
@@ -189,17 +189,16 @@ class MaskRCNNTrainer:
         )
         header = "Epoch: [{}]".format(epoch)
 
-        lr_scheduler = self.lr_scheduler
-        # if epoch == 0:
-        #     logging.info("Warmup learning rate scheduler.")
-        #     warmup_factor = 1.0 / 1000
-        #     warmup_iters = min(1000, len(self.training_loader) - 1)
+        if epoch == 0:
+            logging.info("Warmup learning rate scheduler.")
+            warmup_factor = 1.0 / 1000
+            warmup_iters = min(1000, len(self.training_loader) - 1)
 
-        #     lr_scheduler = utils.warmup_lr_scheduler(
-        #         self.optimizer, warmup_iters, warmup_factor
-        #     )
-        # else:
-        #     lr_scheduler = self.lr_scheduler
+            lr_scheduler = utils.warmup_lr_scheduler(
+                self.optimizer, warmup_iters, warmup_factor
+            )
+        else:
+            lr_scheduler = self.lr_scheduler
         for images, targets in metric_logger.log_every(
             self.training_loader, print_freq, header
         ):
