@@ -41,32 +41,31 @@ class ZooniverseXtalDropDataset(torch.utils.data.Dataset):
             boxes.append([xmin, ymin, xmax, ymax])
         if num_objs == 0:
             empty_flag = True
-            boxes = np.zeros((0, 4), dtype=np.float32)
+            area = [0]
+            num_objs = 1
         else:
             boxes = np.array(boxes, dtype=np.float32)
      
-        if self.transforms is not None:
+        if self.transforms is not None and not empty_flag:
             transformed = self.transforms(image=img, masks=masks, bboxes=boxes, class_labels=class_labels)
             img = transformed['image']
-            i_range = img.max() - img.min()
-            img = (img - img.min())/i_range
+            img = self.normalise_image(img)
             masks = transformed['masks']
             boxes = transformed['bboxes']
             class_labels = transformed['class_labels']
-        
-        if empty_flag:
-            labels = torch.ones((0,), dtype=torch.int64)
-            boxes = np.zeros((0, 4), dtype=np.float32)
-            masks = np.zeros((0, img.shape[1], img.shape[2]), dtype=np.uint8)
-        else:
             labels = [self.class_key.get(item) for item in class_labels]
             labels = torch.as_tensor(labels, dtype=torch.int64)
-            #labels = labels - 1
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        if num_objs == 0:
-            area = 0
-        else:
-            area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        
+        if empty_flag:
+            labels = torch.as_tensor(np.array([0], dtype=int), dtype=torch.int64)
+            img = torch.from_numpy(img.transpose(2, 0, 1))
+            img = self.normalise_image(img)
+            boxes = np.array([[0, 1, 2, 3]], dtype=np.float32)
+            masks = [torch.zeros(( img.shape[1], img.shape[2]), dtype=torch.uint8)]
+
+        boxes = torch.as_tensor(boxes, dtype=torch.float64)    
+        if not empty_flag:
+                area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
 
         target = {}
         target["boxes"] = boxes
@@ -77,6 +76,10 @@ class ZooniverseXtalDropDataset(torch.utils.data.Dataset):
         target["iscrowd"] = torch.zeros((num_objs,), dtype=torch.int64)
 
         return img, target
+    
+    def normalise_image(self, img):
+        i_range = img.max() - img.min()
+        return (img - img.min())/i_range
 
     def __len__(self):
         return len(self.imgs)

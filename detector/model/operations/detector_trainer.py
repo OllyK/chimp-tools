@@ -172,7 +172,7 @@ class MaskRCNNTrainer:
             ):
                 images = list(image.to(self.model_device) for image in images)
                 targets = [
-                    {k: v.to(self.model_device) for k, v in t.items()} for t in targets
+                    {k: torch.as_tensor(v).to(self.model_device) for k, v in t.items()} for t in targets
                 ]
                 loss_dict = self.model(images, targets)
                 loss_dict_reduced = utils.reduce_dict(loss_dict)
@@ -189,44 +189,45 @@ class MaskRCNNTrainer:
         )
         header = "Epoch: [{}]".format(epoch)
 
-        lr_scheduler = None
-        if epoch == 0:
-            warmup_factor = 1.0 / 1000
-            warmup_iters = min(1000, len(self.training_loader) - 1)
+        lr_scheduler = self.lr_scheduler
+        # if epoch == 0:
+        #     logging.info("Warmup learning rate scheduler.")
+        #     warmup_factor = 1.0 / 1000
+        #     warmup_iters = min(1000, len(self.training_loader) - 1)
 
-            lr_scheduler = utils.warmup_lr_scheduler(
-                self.optimizer, warmup_iters, warmup_factor
-            )
-        else:
-            lr_scheduler = self.lr_scheduler
+        #     lr_scheduler = utils.warmup_lr_scheduler(
+        #         self.optimizer, warmup_iters, warmup_factor
+        #     )
+        # else:
+        #     lr_scheduler = self.lr_scheduler
         for images, targets in metric_logger.log_every(
             self.training_loader, print_freq, header
         ):
             images = list(image.to(self.model_device) for image in images)
-            targets = [{k: v.to(self.model_device) for k, v in t.items()} for t in targets]
+            targets = [{k: torch.as_tensor(v).to(self.model_device) for k, v in t.items()} for t in targets]
 
             loss_dict = self.model(images, targets)
 
             losses = sum(loss for loss in loss_dict.values())
 
-            # reduce losses over all GPUs for logging purposes
-            loss_dict_reduced = utils.reduce_dict(loss_dict)
-            losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+            # # reduce losses over all GPUs for logging purposes
+            # loss_dict_reduced = utils.reduce_dict(loss_dict)
+            # losses_reduced = sum(loss for loss in loss_dict_reduced.values())
 
-            loss_value = losses_reduced.item()
+            loss_value = losses.item()
             self.train_losses.append(loss_value)
 
-            if not math.isfinite(loss_value):
-                print("Loss is {}, stopping training".format(loss_value))
-                print(loss_dict_reduced)
-                sys.exit(1)
+            # if not math.isfinite(loss_value):
+            #     print("Loss is {}, stopping training".format(loss_value))
+            #     print(loss_dict_reduced)
+            #     sys.exit(1)
 
             self.optimizer.zero_grad()
             losses.backward()
             self.optimizer.step()
             lr_scheduler.step()
 
-            metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
+            metric_logger.update(loss=losses, **loss_dict)
             metric_logger.update(lr=self.optimizer.param_groups[0]["lr"])
 
     def evaluate_using_torchmetrics(self):
@@ -265,12 +266,12 @@ class MaskRCNNTrainer:
         coco_evaluator = CocoEvaluator(coco, iou_types)
 
         for images, targets in metric_logger.log_every(validation_loader, 100, header):
-            images = list(img.to(device) for img in images)
+            images = list(img.to(self.model_device) for img in images)
 
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             model_time = time.time()
-            outputs = model(images)
+            outputs = self.model(images)
 
             outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
             model_time = time.time() - model_time
@@ -289,7 +290,7 @@ class MaskRCNNTrainer:
         # accumulate predictions from all images
         coco_evaluator.accumulate()
         coco_evaluator.summarize()
-        torch.set_num_threads(n_threads)
+        # torch.set_num_threads(n_threads)
         return coco_evaluator
 
     def output_loss_fig(self, model_out_path: Path) -> None:

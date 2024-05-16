@@ -24,31 +24,17 @@ from utilities.base_data_utils import get_detector_train_settings
     help="Path to existing model to load in for further training.",
 )
 @click.option(
-    "--imbalanced",
-    is_flag=True,
-    default=False,
-    help="Use this option to upsample under-represented classes in imbalanced data.",
-)
-@click.option(
     "--fix_seed",
     is_flag=True,
     default=False,
     help="Use this option to use the random_seed defined in settings to fix the train/valid split.",
-)
-@click.option(
-    "--reload_optimizer",
-    is_flag=True,
-    default=False,
-    help="Use this option to when adding training an unfrozen model to load in previous optimizer weights.",
 )
 @click.argument("data_dir_path")
 def train_detector(
     data_dir_path,
     settings_file,
     finetune,
-    imbalanced,
     fix_seed,
-    reload_optimizer,
 ):
     logging.basicConfig(
         level=logging.INFO,
@@ -68,7 +54,6 @@ def train_detector(
         finetune_path=finetune,
         fix_seed=fix_seed,
     )
-    second_round = finetune is not None
     model_fn = f"{date.today()}_{settings.model_output_fn}.pytorch"
     model_out = Path(Path.cwd(), model_fn)
     trainer.train_model(model_out, num_epochs, settings.patience)
