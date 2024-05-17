@@ -2,19 +2,32 @@ import logging
 from typing import Union
 from timm import create_model
 import torch
+
 import torch.nn as nn
 
 
 def create_model_on_device(
-    device: str, model_struc_dict: dict, pretrained=True, distributed=False,
+    device: str,
+    model_struc_dict: dict,
+    pretrained=True,
+    distributed=False,
 ) -> torch.nn.Module:
+    """
+    Create a model on the specified device.
+
+    Args:
+        device (str): The device to create the model on (e.g., "cuda", "cpu").
+        model_struc_dict (dict): A dictionary containing the model structure information.
+        pretrained (bool): Whether to load pretrained weights for the model.
+        distributed (bool): Whether to distribute training across multiple GPUs.
+
+    Returns:
+        torch.nn.Module: The created model.
+    """
     model_type = model_struc_dict["type"]
     num_classes = model_struc_dict["num_classes"]
     model = create_model(
-        model_type,
-        pretrained=pretrained,
-        num_classes=num_classes,
-        global_pool="avgmax"
+        model_type, pretrained=pretrained, num_classes=num_classes, global_pool="avgmax"
     )
 
     num_in_features = model.get_classifier().in_features
@@ -30,7 +43,7 @@ def create_model_on_device(
             nn.Linear(in_features=512, out_features=num_classes, bias=False),
         )
     elif "resnet" in model_type.lower():
-        # mimic fastai resnet50 head
+        # Mimic fastai resnet50 head
         model.fc = nn.Sequential(
             nn.BatchNorm1d(num_in_features),
             nn.Dropout(0.25, inplace=False),
