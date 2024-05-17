@@ -22,7 +22,21 @@ class DetectorMethod(Enum):
     DETECTRON = 2
     PANOPTIC = 3
 
+
 def create_enum_from_setting(setting_str, enum):
+    """
+    Create an enum from a setting string.
+
+    Args:
+        setting_str (str): The setting string.
+        enum (Enum): The enum class.
+
+    Returns:
+        Enum: The enum value.
+
+    Raises:
+        KeyError: If the setting string is not a valid option.
+    """
     if isinstance(setting_str, Enum):
         return setting_str
     try:
@@ -35,11 +49,38 @@ def create_enum_from_setting(setting_str, enum):
         sys.exit(1)
     return output_enum
 
+
 def get_detector_method(settings: SimpleNamespace) -> Enum:
+    """
+    Get the detector method from the settings.
+
+    Args:
+        settings (SimpleNamespace): The settings object.
+
+    Returns:
+        Enum: The detector method.
+
+    Raises:
+        KeyError: If the detector method is not a valid option.
+    """
     detector_method = create_enum_from_setting(settings.detector_method, DetectorMethod)
     return detector_method
 
+
 def check_csv_filepath(csv_filepath: str) -> Path:
+    """
+    Check if the CSV file path is valid.
+
+    Args:
+        csv_filepath (str): The CSV file path.
+
+    Returns:
+        Path: The resolved CSV file path.
+
+    Raises:
+        FileNotFoundError: If the CSV file does not exist.
+        ValueError: If the file is not a CSV file.
+    """
     csv_filepath = Path(csv_filepath).resolve()
     if csv_filepath.exists():
         if csv_filepath.suffix != ".csv":
@@ -52,6 +93,20 @@ def check_csv_filepath(csv_filepath: str) -> Path:
 
 
 def get_standard_training_data(csv_filepath, prepend_dir):
+    """
+    Get the standard training data.
+
+    Args:
+        csv_filepath (str): The CSV file path.
+        prepend_dir (str): The directory to prepend to relative paths.
+
+    Returns:
+        pd.DataFrame: The training data.
+
+    Raises:
+        FileNotFoundError: If the CSV file does not exist.
+        ValueError: If the file is not a CSV file.
+    """
     # Read in CSV file and prepend directory if paths are relative
     csv_filepath = check_csv_filepath(csv_filepath)
     training_data = pd.read_csv(csv_filepath)
@@ -66,7 +121,17 @@ def get_standard_training_data(csv_filepath, prepend_dir):
             sys.exit(1)
     return training_data
 
+
 def get_classifier_settings(settings_file):
+    """
+    Get the classifier settings.
+
+    Args:
+        settings_file (str): The settings file path.
+
+    Returns:
+        SimpleNamespace: The classifier settings.
+    """
     if settings_file == cfg.CLF_TRAIN_SETTINGS_FN:
         filename = getframeinfo(currentframe()).filename
         # Select directory two up from this file
@@ -77,7 +142,23 @@ def get_classifier_settings(settings_file):
     settings = get_settings_data(settings_path)
     return settings
 
+
 def get_pre_split_data(csv_filepath, validation_filepath, prepend_dir):
+    """
+    Get the pre-split training and validation data.
+
+    Args:
+        csv_filepath (str): The CSV file path for training data.
+        validation_filepath (str): The CSV file path for validation data.
+        prepend_dir (str): The directory to prepend to relative paths.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame]: The training and validation data.
+
+    Raises:
+        FileNotFoundError: If the CSV file does not exist.
+        ValueError: If the file is not a CSV file.
+    """
     csv_filepath = check_csv_filepath(csv_filepath)
     training_data = pd.read_csv(csv_filepath)
     validation_data = pd.read_csv(validation_filepath)
@@ -95,7 +176,17 @@ def get_pre_split_data(csv_filepath, validation_filepath, prepend_dir):
             sys.exit(1)
     return training_data, validation_data
 
+
 def get_detector_train_settings(settings_file):
+    """
+    Get the detector training settings.
+
+    Args:
+        settings_file (str): The settings file path.
+
+    Returns:
+        SimpleNamespace: The detector training settings.
+    """
     if settings_file == cfg.DET_TRAIN_SETTINGS_FN:
         filename = getframeinfo(currentframe()).filename
         # Select directory two up from this file
@@ -105,7 +196,14 @@ def get_detector_train_settings(settings_file):
         settings_path = Path(settings_file)
     return get_settings_data(settings_path)
 
+
 def get_available_device_type() -> str:
+    """
+    Get the available device type.
+
+    Returns:
+        str: The device type ("cuda" or "cpu").
+    """
     if torch.cuda.is_available():
         return "cuda"
     else:
@@ -115,11 +213,22 @@ def get_available_device_type() -> str:
             logging.info("Pytorch version pre-dates MPS support.")
             return "cpu"
         if mps_bool:
-            return "mps"
+            return "cpu"
         else:
             return "cpu"
 
+
 def get_batch_size(settings: SimpleNamespace, prediction: bool = False) -> int:
+    """
+    Get the batch size based on the available device type.
+
+    Args:
+        settings (SimpleNamespace): The settings object.
+        prediction (bool, optional): Whether it is for prediction or training. Defaults to False.
+
+    Returns:
+        int: The batch size.
+    """
     device_type = get_available_device_type()
     if device_type == "cuda":
         cuda_device_num = settings.cuda_device
@@ -162,6 +271,10 @@ def _get_iou_types(model):
     return iou_types
 
 class MetricLogger(object):
+    """
+    A general-purpose metric logger that can be used to log loss, accuracy, etc.
+    Taken from https://github.com/pytorch/vision/blob/main/references/detection/utils.py
+    """
     def __init__(self, delimiter="\t"):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
@@ -237,7 +350,8 @@ class MetricLogger(object):
 
 class SmoothedValue:
     """Track a series of values and provide access to smoothed values over a
-    window or the global series average.
+    window or the global series average. Taken from 
+    https://github.com/pytorch/vision/blob/main/references/detection/utils.py
     """
 
     def __init__(self, window_size=20, fmt=None):
