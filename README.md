@@ -4,7 +4,9 @@ Code to create and use the CHiMP (Crystal Hits in My Plate) classification and o
 
 ## Train a classifier network on images and associated labels
 
-This script is used to train an image classifier. It takes a CSV file as input, which should contain the training data. The script provides several options to customize the training process.
+The `train_classifier.py` script is used to train an image classifier. It was used to create the [CHiMP Classifier-v2 model](https://doi.org/10.5281/zenodo.11190974) by fine-tuning a pre-trained ConvNeXt-Tiny CNN first on the [MARCO Dataset](https://marco.ccr.buffalo.edu/download) of 462,804 images and then on the [VMXi Classification Dataset](https://zenodo.org/doi/10.5281/zenodo.11097395) of 13,951 images.
+
+It takes a CSV file as input, which should contain the training data in the form of two columns, the first being the filename and the second being the associated label. The script provides several options to customize the training process.
 
 Here's how to use it from the command line:
 
@@ -40,9 +42,37 @@ python train_classifier.py --settings_file settings.json --finetune model.pth --
 
 This command will train the classifier using the settings in settings.json, fine-tuning from model.pth, upsampling under-represented classes, and maximizing accuracy instead of minimizing validation loss. The training data is provided in training_data.csv.
 
+## Predict labels for images in a directory using a classifier network
+
+The classify_folder.py script is used to classify images in a directory using a pre-trained model. It takes two required command-line arguments and one optional argument:
+
+`--model_path`: This is the path to the pre-trained model file.
+
+`--image_dir`: This is the path to the directory containing the images to be classified.
+
+`--img_size`: This is the size to which the images will be resized for inference. It defaults to 384 if not provided.
+
+To run the script, you would use a command like the following in your terminal:
+
+```shell
+python classify_folder.py --model_path path/to/model --image_dir path/to/images
+```
+
+Replace `path/to/model` and `path/to/images` with the paths to your model file and image directory, respectively. If you want to specify a different image size for inference, you can use the `--img_size` option:
+
+```shell
+python classify_folder.py --model_path path/to/model --image_dir path/to/images --img_size 512
+```
+
+The script will output a CSV file in the current working directory, with the filename in the format `YYYY-MM-DD_predictions.csv`, where YYYY-MM-DD is the current date. This file will contain the predicted classifications for the images in the directory.
+
+This script can be used to predict experimental outcomes from micrographs using the [CHiMP Classifier-v2 model](https://doi.org/10.5281/zenodo.11190974).
+
 ## Train a Mask-R-CNN object and instance detection network on images and masks
 
-To train a detector run the script `train_detector.py`. This script is used to train a Mask R-CNN model for object detection. It takes several command-line arguments:
+To train a detector run the script `train_detector.py`. This script is used to train a Mask R-CNN model for object detection and was used to train networks for protein crystal detection at Diamond Light Source, UK on data which can be found [here](https://doi.org/10.5281/zenodo.11110373).
+
+The script takes several command-line arguments:
 
 `--settings_file`: This is the path to the settings YAML file. If not provided, it will use the default settings file defined in cfg.DET_TRAIN_SETTINGS_FN and is currently set to `detector_train_settings.yaml`.
 
