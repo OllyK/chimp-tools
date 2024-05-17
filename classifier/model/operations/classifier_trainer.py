@@ -96,15 +96,19 @@ class ImageClassifierTrainer:
         return model_struc_dict
 
     def _calculate_log_lr_ratio(self):
+        """Calculate the logarithm of the learning rate ratio."""
         return math.log(self.end_lr / self.starting_lr)
 
     def _create_optimizer(self, learning_rate):
+        """Create an AdamW optimizer with the given learning rate."""
         return torch.optim.AdamW(self.model.parameters(), lr=learning_rate)
 
     def _create_exponential_lr_scheduler(self):
+        """Create a LambdaLR scheduler with an exponential learning rate decay."""
         return torch.optim.lr_scheduler.LambdaLR(self.optimizer, self._lr_exp_stepper)
 
     def _create_oc_lr_scheduler(self, num_epochs, lr_to_use):
+        """Create a OneCycleLR scheduler with the given number of epochs and learning rate."""
         return torch.optim.lr_scheduler.OneCycleLR(
             self.optimizer,
             max_lr=lr_to_use,
@@ -116,6 +120,17 @@ class ImageClassifierTrainer:
     def _create_early_stopping(
         self, output_path, patience, best_score=None, use_accuracy=False
     ):
+        """Create an EarlyStopping object with the given parameters.
+        
+        Args:
+            output_path (Path): Path to save the best model checkpoint.
+            patience (int): Number of epochs to wait for while validation loss is not improving before terminating.
+            best_score (float, optional): Best validation score achieved so far. Defaults to None.
+            use_accuracy (bool, optional): Whether to use accuracy for determining the best model. Defaults to False.
+        
+        Returns:
+            EarlyStopping: EarlyStopping object.
+        """
         return EarlyStopping(
             patience=patience,
             verbose=True,
@@ -127,6 +142,13 @@ class ImageClassifierTrainer:
         )
 
     def _create_model_and_optimiser(self, learning_rate, frozen=True, pretrained=True):
+        """Create the model and optimizer with the given parameters.
+        
+        Args:
+            learning_rate (float): Learning rate for the optimizer.
+            frozen (bool, optional): Whether to freeze the weights for convolutional layers in the encoder. Defaults to True.
+            pretrained (bool, optional): Whether to use pretrained weights for the model. Defaults to True.
+        """
         logging.info(f"Setting up the model on device {self.model_device}.")
         self.model = create_model_on_device(
             self.model_device,
@@ -144,16 +166,39 @@ class ImageClassifierTrainer:
     def _load_in_model_and_optimizer(
         self, learning_rate, output_path, frozen=False, optimizer=False
     ):
+        """Load the model and optimizer from a saved checkpoint.
+        
+        Args:
+            learning_rate (float): Learning rate for the optimizer.
+            output_path (Path): Path to the saved checkpoint.
+            frozen (bool, optional): Whether to freeze the weights for convolutional layers in the encoder. Defaults to False.
+            optimizer (bool, optional): Whether to load the optimizer state from the checkpoint. Defaults to False.
+        
+        Returns:
+            float: Loss value from the loaded checkpoint.
+        """
         self._create_model_and_optimiser(learning_rate, frozen=frozen, pretrained=False)
         logging.info(f"Loading in weights from saved checkpoint: {output_path}.")
         loss_val = self._load_in_weights(output_path, optimizer=optimizer)
         return loss_val
 
     def _load_in_weights(self, output_path, optimizer=False, gpu=True):
-        # load the last checkpoint with the best model
+        """
+        Load the model weights from a saved checkpoint.
+
+        Args:
+            output_path (Path): Path to the saved checkpoint.
+            optimizer (bool, optional): Whether to load the optimizer state from the checkpoint. Defaults to False.
+            gpu (bool, optional): Whether to load the model weights onto the GPU. Defaults to True.
+
+        Returns:
+            float: Loss value from the loaded checkpoint.
+        """
+        # Load the last checkpoint with the best model
         model_dict = torch.load(output_path, map_location=self.model_device)
         logging.info("Loading model weights.")
         state_dict = model_dict["model_state_dict"]
+        
         if self.distributed:
             new_state_dict = OrderedDict()
             for k, v in state_dict.items():
@@ -163,19 +208,37 @@ class ImageClassifierTrainer:
                     k = k.replace("features.module", "module.features")
                 new_state_dict[k] = v
             state_dict = new_state_dict
+        
         self.model.load_state_dict(state_dict)
+        
         if optimizer:
             logging.info("Loading optimizer weights.")
             self.optimizer.load_state_dict(model_dict["optimizer_state_dict"])
+        
         return model_dict.get("loss_val", np.inf)
 
     def _count_trainable_parameters(self) -> int:
+        """
+        Count the number of trainable parameters in the model.
+
+        Returns:
+            int: Number of trainable parameters.
+        """
         return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
 
     def _count_parameters(self) -> int:
+        """
+        Count the total number of parameters in the model.
+
+        Returns:
+            int: Total number of parameters.
+        """
         return sum(p.numel() for p in self.model.parameters())
 
     def _freeze_model(self):
+        """
+        Freeze the weights of the model.
+        """
         logging.info(
             f"Freezing model with {self._count_trainable_parameters()} trainable parameters, {self._count_parameters()} total parameters."
         )
@@ -186,6 +249,9 @@ class ImageClassifierTrainer:
             self.model.fc.requires_grad_(True)
 
     def _unfreeze_model(self):
+        """
+        Unfreeze the weights of the model.
+        """
         logging.info(
             f"Unfreezing model with {self._count_trainable_parameters()} trainable parameters, {self._count_parameters()} total parameters."
         )
@@ -202,8 +268,9 @@ class ImageClassifierTrainer:
         reload_optimizer: bool = False,
         use_accuracy: bool = False,
     ) -> None:
-        """Performs training of model for a number of epochs
-        with a learning rate that is determined automatically.
+        """
+        Performs training of model for a number of epochs with a learning rate that is determined automatically.
+
         Args:
             output_path (Path): Path to save model file to.
             num_epochs (int): Number of epochs to train the model for.
@@ -213,6 +280,7 @@ class ImageClassifierTrainer:
         """
         train_losses = []
         valid_losses = []
+
         if create:
             self._create_model_and_optimiser(self.starting_lr, frozen=frozen)
             lr_to_use = self._run_lr_finder()
@@ -311,6 +379,12 @@ class ImageClassifierTrainer:
         # self._load_in_weights(output_path, optimizer=True)
 
     def _run_lr_finder(self):
+        """
+        Runs the learning rate finder to determine the optimal learning rate for the model.
+        
+        Returns:
+            float: The optimal learning rate to use.
+        """
         logging.info("Finding learning rate for model.")
         lr_scheduler = self._create_exponential_lr_scheduler()
         lr_find_loss, lr_find_lr = self._lr_finder(lr_scheduler)
@@ -319,6 +393,16 @@ class ImageClassifierTrainer:
         return lr_to_use
 
     def _train_one_batch(self, lr_scheduler, batch):
+        """
+        Trains the model on a single batch of data.
+        
+        Args:
+            lr_scheduler: The learning rate scheduler.
+            batch: The batch of data to train on.
+        
+        Returns:
+            float: The loss value for the batch.
+        """
         inputs, targets = batch
         inputs, targets = inputs.to(self.model_device), targets.to(self.model_device)
         self.optimizer.zero_grad()
@@ -330,10 +414,14 @@ class ImageClassifierTrainer:
         return loss
 
     def _lr_exp_stepper(self, x):
-        """Exponentially increase learning rate as part of strategy to find the
-        optimum.
-        Taken from
-        https://towardsdatascience.com/adaptive-and-cyclical-learning-rates-using-pytorch-2bf904d18dee
+        """
+        Exponentially increase learning rate as part of strategy to find the optimum.
+        
+        Args:
+            x: The input value.
+        
+        Returns:
+            float: The exponentially increased learning rate.
         """
         return math.exp(
             x * self.log_lr_ratio / (self.lr_find_epochs * len(self.training_loader))
