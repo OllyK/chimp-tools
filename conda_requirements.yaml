@@ -1,0 +1,15 @@
+name: myenv
+channels:
+    - defaults
+dependencies:
+    - python=3.11
+    - click
+    - pandas
+    - tqdm
+    - timm
+    - pip:
+        - albumentations
+        - torchmetrics
+        - matplotlib
+        - pycocotools
+        - pytest
