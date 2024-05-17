@@ -2,7 +2,45 @@
 
 Code to create and use the CHiMP (Crystal Hits in My Plate) classification and object detection networks
 
-## Train a Mask-R-CNN object and instance detection network
+## Train a classifier network on images and associated labels
+
+This script is used to train an image classifier. It takes a CSV file as input, which should contain the training data. The script provides several options to customize the training process.
+
+Here's how to use it from the command line:
+
+```shell
+python train_classifier.py [OPTIONS] CSV_FILEPATH
+```
+
+Here are the available options:
+
+`--settings_file` SETTINGS_FILE: Path to the settings file. Default is the value of CLF_TRAIN_SETTINGS_FN in the utilities.config module the default is currently `classifier_train_settings.yaml`.
+
+`--prepend_dir` PREPEND_DIR: Prepend this directory if paths in CSV are relative rather than absolute.
+
+`--finetune` FINETUNE: Path to existing model to load in for further training.
+
+`--imbalanced`: Use this option to upsample under-represented classes in imbalanced data.
+
+`--valid_data` VALID_DATA: Path to validation dataset CSV (if data has been split before training).
+
+`--fix_seed`: Use this option to use the random_seed defined in settings to fix the train/valid split.
+
+`--reload_optimizer`: Use this option when adding training to a model to load in previous optimizer weights.
+
+`--distributed`: Use this option to perform training distributed across multiple GPUs.
+
+`--use_accuracy`: Use this option to maximize accuracy metric for saving model and early stopping rather than minimizing validation loss.
+
+Here's another example of how to use the script:
+
+```shell
+python train_classifier.py --settings_file settings.json --finetune model.pth --imbalanced --use_accuracy training_data.csv
+```
+
+This command will train the classifier using the settings in settings.json, fine-tuning from model.pth, upsampling under-represented classes, and maximizing accuracy instead of minimizing validation loss. The training data is provided in training_data.csv.
+
+## Train a Mask-R-CNN object and instance detection network on images and masks
 
 To train a detector run the script `train_detector.py`. This script is used to train a Mask R-CNN model for object detection. It takes several command-line arguments:
 
