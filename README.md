@@ -2,6 +2,16 @@
 
 Code to create and use the CHiMP (Crystal Hits in My Plate) classification and object detection networks
 
+## Installation
+
+Clone the repository and then create a conda environment using the `conda_requirements.yaml`.
+
+```shell
+conda env create --name chimp_env --file conda_requirements.yaml
+```
+
+Activate the environment and you should then be able ot run the scripts.
+
 ## Train a classifier network on images and associated labels
 
 The `train_classifier.py` script is used to train an image classifier. It was used to create the [CHiMP Classifier-v2 model](https://doi.org/10.5281/zenodo.11190974) by fine-tuning a pre-trained ConvNeXt-Tiny CNN first on the [MARCO Dataset](https://marco.ccr.buffalo.edu/download) of 462,804 images and then on the [VMXi Classification Dataset](https://zenodo.org/doi/10.5281/zenodo.11097395) of 13,951 images.
