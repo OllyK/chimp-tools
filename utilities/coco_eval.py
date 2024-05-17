@@ -1,9 +1,7 @@
 import json
-import tempfile
 
 import numpy as np
 import copy
-import time
 import torch
 
 from pycocotools.cocoeval import COCOeval
@@ -16,6 +14,7 @@ import utilities.base_data_utils as utils
 
 
 class CocoEvaluator(object):
+    """Taken from https://github.com/pytorch/vision/blob/main/references/detection/coco_eval.py"""
     def __init__(self, coco_gt, iou_types):
         assert isinstance(iou_types, (list, tuple))
         coco_gt = copy.deepcopy(coco_gt)
