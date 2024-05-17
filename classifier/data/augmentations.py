@@ -61,12 +61,6 @@ def get_train_augs(img_size: int) -> A.core.composition.Compose:
                 ],
                 p=0.4,
             ),
-            # A.RandomSizedCrop(
-            #     min_max_height=(img_size // 2, img_size),
-            #     height=img_size,
-            #     width=img_size,
-            #     p=0.2,
-            # ),
             A.CLAHE(p=0.2),
             A.OneOf([A.RandomBrightnessContrast(p=0.5), A.RandomGamma(p=0.5)], p=0.4),
         ]

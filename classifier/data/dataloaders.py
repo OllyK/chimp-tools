@@ -15,6 +15,31 @@ from classifier.data.datasets import (
     get_prediction_dataset,
 )
 
+
+def get_train_val_dataloaders(
+    training_data: pd.DataFrame,
+    settings: SimpleNamespace,
+    imbalanced: bool = False,
+    fix_seed: bool = False,
+    validation_data: Union[None, pd.DataFrame] = None,
+) -> Tuple[DataLoader, DataLoader]:
+    """Returns training and validation dataloaders with indices split at random
+    according to the percentage split specified in settings.
+
+    Args:
+        training_data (pd.DataFrame): A Pandas dataframe with columns for image path and class label
+        settings (SimpleNamespace): Settings object
+        imbalanced (bool, optional): Flag indicating whether to oversample under-represented classes. Defaults to False.
+        fix_seed (bool, optional): Flag indicating whether to fix the random seed for reproducibility. Defaults to False.
+        validation_data (Union[None, pd.DataFrame], optional): A Pandas dataframe with validation data. Defaults to None.
+
+    Returns:
+        Tuple[DataLoader, DataLoader]: A tuple containing the training and validation dataloaders.
+    """
+
+    # Rest of the code...
+
+
 def get_train_val_dataloaders(
     training_data: pd.DataFrame,
     settings: SimpleNamespace,
@@ -41,7 +66,9 @@ def get_train_val_dataloaders(
 
     if validation_data is None:
         full_training_dset = get_training_dataset(training_data, img_size, class_to_idx)
-        full_validation_dset = get_validation_dataset(training_data, img_size, class_to_idx)
+        full_validation_dset = get_validation_dataset(
+            training_data, img_size, class_to_idx
+        )
         # split the dataset in train and test set
         dset_length = len(full_training_dset)
         logging.info(f"Full dataset has {dset_length} members.")
@@ -54,7 +81,9 @@ def get_train_val_dataloaders(
         else:
             rand_generator = None
         indices = torch.randperm(dset_length, generator=rand_generator).tolist()
-        train_idx, validate_idx = np.split(indices, [int(dset_length * training_set_prop)])
+        train_idx, validate_idx = np.split(
+            indices, [int(dset_length * training_set_prop)]
+        )
         logging.info(
             f"Splitting into training dataset: {len(train_idx)} members, validation dataset: {len(validate_idx)} members."
         )
@@ -62,7 +91,9 @@ def get_train_val_dataloaders(
         validation_dataset = Subset(full_validation_dset, validate_idx)
     else:
         training_dataset = get_training_dataset(training_data, img_size, class_to_idx)
-        validation_dataset = get_validation_dataset(validation_data, img_size, class_to_idx)
+        validation_dataset = get_validation_dataset(
+            validation_data, img_size, class_to_idx
+        )
 
     if imbalanced:  # Oversample under-represented classes
         if validation_data is None:

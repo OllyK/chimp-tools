@@ -10,12 +10,14 @@ class ImageClassifierDataset(BaseDataset):
 
     Args:
         input_data (pd.DataFrame): A Pandas dataframe with columns for image path and class label
-        preprocessing (albumentations.Compose): data pre-processing
+        class_to_idx (dict): A dictionary mapping class labels to their corresponding indices
+        preprocessing (albumentations.Compose): Data pre-processing transformation pipeline
             (e.g. padding, resizing)
-        augmentation (albumentations.Compose): data transformation pipeline
+        augmentation (albumentations.Compose): Data augmentation transformation pipeline
             (e.g. flip, scale, contrast adjustments)
-        postprocessing (albumentations.Compose): data post-processing
+        postprocessing (albumentations.Compose): Data post-processing transformation pipeline
             (e.g. Convert to Tensor)
+        is_marco_data (bool): Flag indicating whether the dataset is for Marco data
     """
 
     def __init__(
@@ -27,39 +29,51 @@ class ImageClassifierDataset(BaseDataset):
         postprocessing=None,
         is_marco_data=False,
     ):
-
         self.input_data = input_data
         self.class_to_idx = class_to_idx
         self.augmentation = augmentation
         self.preprocessing = preprocessing
         self.postprocessing = postprocessing
         self.class_idx = 3 if is_marco_data else 1
-        # Create a list with all output labels to enable balancing classes
         self.label_list = (
-            self.input_data.iloc[:, self.class_idx].apply(lambda x: self.class_to_idx[x]).tolist()
+            self.input_data.iloc[:, self.class_idx]
+            .apply(lambda x: self.class_to_idx[x])
+            .tolist()
         )
 
     def __getitem__(self, i):
+        """
+        Retrieves the i-th item from the dataset.
 
-        # read data
+        Args:
+            i (int): The index of the item to retrieve
+
+        Returns:
+            tuple: A tuple containing the preprocessed image and its corresponding index
+
+        """
         image = io.imread(self.input_data.iloc[i, 0])
         idx = self.class_to_idx[self.input_data.iloc[i, self.class_idx]]
 
-        # apply pre-processing
         if self.preprocessing:
             image = self.preprocessing(image=image)["image"]
 
-        # apply augmentations
         if self.augmentation:
             image = self.augmentation(image=image)["image"]
 
-        # apply post-processing
         if self.postprocessing:
             image = self.postprocessing(image=image)["image"]
 
         return image, idx
 
     def __len__(self):
+        """
+        Returns the length of the dataset.
+
+        Returns:
+            int: The length of the dataset
+
+        """
         return len(self.input_data.index)
 
 
@@ -100,13 +114,16 @@ class ImageClassifierPredictionDataset(BaseDataset):
         # apply post-processing
         if self.postprocessing:
             image = self.postprocessing(image=image)["image"]
-        
+
         sample = {"image": image, "filename": filename}
         return sample
 
 
 def get_training_dataset(
-    data: pd.DataFrame, img_size: int, class_to_idx: dict, is_marco_data: bool = False,
+    data: pd.DataFrame,
+    img_size: int,
+    class_to_idx: dict,
+    is_marco_data: bool = False,
 ) -> ImageClassifierDataset:
 
     return ImageClassifierDataset(
@@ -115,12 +132,15 @@ def get_training_dataset(
         preprocessing=augs.get_preprocess_augs(img_size),
         augmentation=augs.get_train_augs(img_size),
         postprocessing=augs.get_postprocess_augs(),
-        is_marco_data=is_marco_data
+        is_marco_data=is_marco_data,
     )
 
 
 def get_validation_dataset(
-    data: pd.DataFrame, img_size: int, class_to_idx: dict, is_marco_data: bool = False,
+    data: pd.DataFrame,
+    img_size: int,
+    class_to_idx: dict,
+    is_marco_data: bool = False,
 ) -> ImageClassifierDataset:
 
     return ImageClassifierDataset(
@@ -128,7 +148,7 @@ def get_validation_dataset(
         class_to_idx,
         preprocessing=augs.get_preprocess_augs(img_size),
         postprocessing=augs.get_postprocess_augs(),
-        is_marco_data=is_marco_data
+        is_marco_data=is_marco_data,
     )
 
 
