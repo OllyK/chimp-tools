@@ -104,3 +104,30 @@ python train_detector.py --fix_seed data_directory_path
 ```
 
 The script will output a trained model file in the current working directory, with the filename in the format `YYYY-MM-DD_model_output_fn.pytorch`, where YYYY-MM-DD is the current date and model_output_fn is defined in the settings file. It will also output a figure showing the loss during training.
+
+## Detect crystal positions for images in a directory using a trained Mask-R-CNN network
+
+The script `detect_folder.py` is used to detect positions of crystals in a folder of drop images using a Mask-R-CNN based object detector. It takes several command-line arguments:
+
+`--MODEL_PATH`: This is the path to the pre-trained model file. This argument is required.
+
+`--IMAGE_PATH`: This is the path to the directory containing the images to be processed. This argument is required.
+
+`--num_classes`: This is the number of classes that the model was trained on. It defaults to 3 if not provided.
+
+`--mode`: This is the mode for point generation. One of "SINGLE", "RANDOM" and "REGULAR. If "SINGLE", one point is generated per crystal, "REGULAR" and "RANDOM" generate multiple points per crystal for larger crystals on a regular grid or on a grid with a randomised offset respectively. Defaults to "SINGLE".
+
+`--preview`: If this flag is provided, the script will output preview images.
+
+`--masks`: If this flag is provided, the script will output masks.
+
+`--echo`: If this flag is provided, the script will output a candidate position for compound dispensing using an echo dispenser.
+
+
+To run the script, you would use a command like the following in your terminal:
+
+```shell
+python detect_folder.py --MODEL_PATH path/to/model --IMAGE_PATH path/to/images
+```
+
+The script will output a CSV file with the detected positions of the crystals in the current working directory, with the filename `detector_positions.csv`. Replace `path/to/model` and `path/to/images` with the paths to your model file and image directory, respectively. If the `--preview` flag is provided, the script will also output preview images in a directory named `preview_images`.
