@@ -5,10 +5,11 @@ dependencies:
     - python=3.11
     - click
     - pandas
+    - pip
     - tqdm
-    - timm
     - pip:
         - albumentations
+        - timm
         - torchmetrics
         - matplotlib
         - pycocotools
