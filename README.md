@@ -107,7 +107,7 @@ The script will output a trained model file in the current working directory, wi
 
 ## Detect crystal positions for images in a directory using a trained Mask-R-CNN network
 
-The script `detect_folder.py` is used to detect positions of crystals in a folder of drop images using a Mask-R-CNN based object detector. It takes several command-line arguments:
+The script `detect_folder.py` is used to detect positions of crystals in a folder of drop images using a Mask-R-CNN based object detector. Model weights for a network trained to detect crystals can be found [here](https://doi.org/10.5281/zenodo.11164788) and model weights to detect crystals and drops can be found [here](https://doi.org/10.5281/zenodo.11165195).  The script several command-line arguments:
 
 `--MODEL_PATH`: This is the path to the pre-trained model file. This argument is required.
 
