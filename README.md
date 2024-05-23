@@ -131,3 +131,20 @@ python detect_folder.py --MODEL_PATH path/to/model --IMAGE_PATH path/to/images
 ```
 
 The script will output a CSV file with the detected positions of the crystals in the current working directory, with the filename `detector_positions.csv`. Replace `path/to/model` and `path/to/images` with the paths to your model file and image directory, respectively. If the `--preview` flag is provided, the script will also output preview images in a directory named `preview_images`.
+
+## Citation
+
+If you use these tools for your research, please cite:
+
+CHiMP: Deep Learning Tools Trained on Protein Crystallisation Micrographs to Enable Automation of Experiments. Preprint. bioRxiv: https://biorxiv.org/cgi/content/short/2024.05.22.595345v1
+
+```bibtex
+@misc{King2024,
+    doi = {10.1101/2024.05.22.595345},
+    url = {https://doi.org/10.1101/2024.05.22.595345},
+    year = {2024},
+    publisher = {bioRxiv},
+    author = {Oliver N. F. King and Karl E. Levik and James Sandy and Mark Basham},
+    title = {CHiMP: Deep Learning Tools Trained on Protein Crystallisation Micrographs to Enable Automation of Experiments} }
+```
+
