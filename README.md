@@ -132,6 +132,65 @@ python detect_folder.py --MODEL_PATH path/to/model --IMAGE_PATH path/to/images
 
 The script will output a CSV file with the detected positions of the crystals in the current working directory, with the filename `detector_positions.csv`. Replace `path/to/model` and `path/to/images` with the paths to your model file and image directory, respectively. If the `--preview` flag is provided, the script will also output preview images in a directory named `preview_images`.
 
+## Pre-process images and create a manifest for upload to Zooniverse
+
+The script `prefilter_zooniverse_images.py` found in `detector/scripts` will prefilter a directory of images with the CLAHE filter and also output a manifest.csv file suitable for data upload to the Zooniverse platform.
+
+**Basic Usage**
+To process images in a directory input_images and save the processed images to output_images with default settings:
+
+```python
+python prefilter_zooniverse_images.py input_images output_images
+```
+**Specifying Grid Size**
+To process images with a specific grid size for CLAHE (e.g., grid size of 8):
+
+```python
+python prefilter_zooniverse_images.py input_images output_images --gridsize 8
+```
+
+**Specifying Output Manifest Prefix**
+To process images with a specific grid size and a custom prefix for the manifest filename:
+
+```python
+python prefilter_zooniverse_images.py input_images output_images --gridsize 8 --prefix custom
+```
+
+## Process a Zooniverse data export to generate masks for training a Mask-R-CNN
+
+The script `process_zooniverse_csv_masks.py` found in `detector/scripts` will process a CSV file containing Zooniverse annotations and generates image masks from the annotations.
+
+**Basic Usage**
+The script takes two command-line arguments:
+
+1. csv_path: The path to the CSV file containing Zooniverse annotations.
+2. output_dir: The directory where the generated image masks will be saved.
+
+To run the script, use the following command:
+
+```python
+python process_zooniverse_csv_masks.py <csv_path> <output_dir>
+```
+
+Replace <csv_path> with the path to your CSV file and <output_dir> with the path to the directory where you want to save the masks.
+
+**Example**
+If your CSV file is located at data/annotations.csv and you want to save the masks in the output/masks directory, you would run:
+
+```python
+python process_zooniverse_csv_masks.py data/annotations.csv output/masks
+```
+
+**Output**
+The script will save the generated masks in the specified output directory. Each mask file will be named after the corresponding image file, with a .npz extension. The .npz files will contain:
+
+- class_labels: An array of class labels for the masks (e.g., "drop" or "crystal").
+- masks: An array of boolean masks.
+
+**Notes**
+- Ensure that the CSV file contains the necessary annotation data in JSON format.
+- The script expects the CSV to have specific columns (annotations and subject_data) with JSON data.
+
 ## Citation
 
 If you use these tools for your research, please cite:

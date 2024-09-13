@@ -10,6 +10,7 @@ dependencies:
     - pip:
         - albumentations
         - timm
+        - pillow
         - torchmetrics
         - matplotlib
         - pycocotools
