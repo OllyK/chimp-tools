@@ -195,15 +195,19 @@ The script will save the generated masks in the specified output directory. Each
 
 If you use these tools for your research, please cite:
 
-CHiMP: Deep Learning Tools Trained on Protein Crystallisation Micrographs to Enable Automation of Experiments. Preprint. bioRxiv: https://biorxiv.org/cgi/content/short/2024.05.22.595345v1
+CHiMP: Deep Learning Tools Trained on Protein Crystallisation Micrographs to Enable Automation of Experiments. Acta Crystallographica Section D: https://doi.org/10.1107/S2059798324009276595345v1
 
 ```bibtex
 @misc{King2024,
-    doi = {10.1101/2024.05.22.595345},
-    url = {https://doi.org/10.1101/2024.05.22.595345},
-    year = {2024},
-    publisher = {bioRxiv},
-    author = {Oliver N. F. King and Karl E. Levik and James Sandy and Mark Basham},
-    title = {CHiMP: Deep Learning Tools Trained on Protein Crystallisation Micrographs to Enable Automation of Experiments} }
+    author = "King, Oliver N. F. and Levik, Karl E. and Sandy, James and Basham, Mark",
+    title = "{CHiMP: deep-learning tools trained on protein crystallization micrographs to enable automation of experiments}",
+    journal = "Acta Crystallographica Section D",
+    year = "2024",
+    volume = "80",
+    number = "10",
+    pages = "744--764",
+    month = "Oct",
+    doi = {10.1107/S2059798324009276},
+    url = {https://doi.org/10.1107/S2059798324009276}, }
 ```
 
